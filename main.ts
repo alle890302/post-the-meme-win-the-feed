@@ -34,5 +34,27 @@ try {
   process.exit(1);
 }
 
+// Validate before handing anything to the grader: POST.json must parse as
+// JSON and carry a "url" string that points at a post on x.com (or the
+// older twitter.com host). A malformed address would score zero anyway,
+// so fail loudly here instead of copying bytes the grader cannot use.
+let parsed: unknown;
+try {
+  parsed = JSON.parse(payload.toString('utf8'));
+} catch (err) {
+  console.error(`invalid POST.json: not valid JSON (${(err as Error).message})`);
+  process.exit(1);
+}
+const url = (parsed as { url?: unknown } | null)?.url;
+const isPostUrl =
+  typeof url === 'string' &&
+  (url.startsWith('https://x.com/') || url.startsWith('https://twitter.com/'));
+if (!isPostUrl) {
+  console.error(
+    `invalid POST.json: "url" must be a string starting with https://x.com/ or https://twitter.com/ (got ${JSON.stringify(url)})`,
+  );
+  process.exit(1);
+}
+
 mkdirSync(outputDir, { recursive: true });
 writeFileSync(target, payload);
